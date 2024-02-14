@@ -21,3 +21,5 @@ void DrawCircleGradientV(Vector2 position, float radius, Color color1,
     }
     rlEnd();
 }
+
+float Max(float a, float b) { return a > b ? a : b; }
