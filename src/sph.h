@@ -61,6 +61,7 @@ struct particle {
         Vector2 position; // Position of the particle (in meters)
         Vector2 velocity; // Velocity of the particle (in m/s)
         float density;    // Density of the particle (in kg/m^3)
+        float pressure;   // Pressure of the particle (in Pa)
 };
 
 // The structure that represents an array of particles
@@ -68,6 +69,11 @@ struct particle_array {
         struct particle *items;
         int count;
         int capacity;
+};
+
+enum kernel_type {
+    GAUSSIAN_KERNEL,
+    CUBIC_KERNEL,
 };
 
 #if defined(__cplusplus)
@@ -79,20 +85,29 @@ SPH_EXPORT void particles_init_grid(struct particle_array *particles,
                                     float width, float height, float spacing);
 SPH_EXPORT void particles_init_rand(struct particle_array *particles,
                                     float width, float height);
+SPH_EXPORT float particle_density(struct particle_array *particles, int i,
+                                  float h, float particle_mass,
+                                  enum kernel_type type);
+SPH_EXPORT Vector2 particle_pressure_gradient(struct particle_array *particles,
+                                              int i, float h,
+                                              float particle_mass,
+                                              enum kernel_type kernel_type);
 
 // Kernel functions
-SPH_EXPORT float gaussian_kernel_function(float x, float h);
-SPH_EXPORT float gaussian_kernel_function_derivative(float x, float h);
-SPH_EXPORT float cubic_kernel_function(float x, float h);
-SPH_EXPORT float cubic_kernel_function_derivative(float x, float h);
+SPH_EXPORT float kernel_gaussian(float x, float h);
+SPH_EXPORT float kernel_gaussian_derivative(float x, float h);
+SPH_EXPORT float kernel_cubic(float x, float h);
+SPH_EXPORT float kernel_cubic_derivative(float x, float h);
+SPH_EXPORT float kernel_function(float x, float h, enum kernel_type type);
+SPH_EXPORT float kernel_function_derivative(float x, float h,
+                                            enum kernel_type type);
 
 // Pressure computation
-SPH_EXPORT float compute_pressure_cole(float density, float rest_density,
-                                       float speed_of_sound,
-                                       float adiabatic_index,
-                                       float background_pressure);
-SPH_EXPORT float compute_pressure_gas(float density, float rest_density,
-                                      float pressure_multiplier);
+SPH_EXPORT float pressure_cole(float density, float rest_density,
+                               float speed_of_sound, float adiabatic_index,
+                               float background_pressure);
+SPH_EXPORT float pressure_gas(float density, float rest_density,
+                              float pressure_multiplier);
 
 #if defined(__cplusplus)
 } // extern "C"

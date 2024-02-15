@@ -22,7 +22,7 @@ float compute_density(struct particle_array *particles, Vector2 point,
     for (int j = 0; j < particles->count; j++) {
         Vector2 dir = Vector2Subtract(point, particles->items[j].position);
         float x = Vector2Length(dir);
-        float influence = cubic_kernel_function(x, h);
+        float influence = kernel_cubic(x, h);
         density += influence * PARTICLE_MASS;
     }
 
@@ -30,6 +30,14 @@ float compute_density(struct particle_array *particles, Vector2 point,
 }
 
 void DrawDensityPoint(struct particle_array *particles, float h) {
+    for (int i = 0; i < particles->count; i++) {
+        Vector2 screen_position =
+            (Vector2){FROM_WORLD_TO_SCREEN(particles->items[i].position.x),
+                      FROM_WORLD_TO_SCREEN(particles->items[i].position.y)};
+        float screen_radius = FROM_WORLD_TO_SCREEN(PARTICLE_RADIUS);
+        DrawCircleV(screen_position, screen_radius, BLUE);
+    }
+
     Vector2 mouse_position = GetMousePosition();
     Vector2 world_position = (Vector2){FROM_SCREEN_TO_WORLD(mouse_position.x),
                                        FROM_SCREEN_TO_WORLD(mouse_position.y)};
@@ -73,14 +81,6 @@ int main() {
 
         BeginDrawing();
         ClearBackground(DARKGRAY);
-
-        for (int i = 0; i < particles.count; i++) {
-            Vector2 screen_position =
-                (Vector2){FROM_WORLD_TO_SCREEN(particles.items[i].position.x),
-                          FROM_WORLD_TO_SCREEN(particles.items[i].position.y)};
-            float screen_radius = FROM_WORLD_TO_SCREEN(PARTICLE_RADIUS);
-            DrawCircleV(screen_position, screen_radius, BLUE);
-        }
 
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
             spacing += GetMouseWheelMove() * 0.01f;

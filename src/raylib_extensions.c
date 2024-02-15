@@ -23,3 +23,7 @@ void DrawCircleGradientV(Vector2 position, float radius, Color color1,
 }
 
 float Max(float a, float b) { return a > b ? a : b; }
+
+Vector2 Vector2Random(float min, float max) {
+    return (Vector2){GetRandomFloat(min, max), GetRandomFloat(min, max)};
+}

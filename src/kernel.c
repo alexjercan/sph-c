@@ -1,5 +1,5 @@
-#include "sph.h"
 #include "raylib_extensions.h"
+#include "sph.h"
 #include <math.h>
 
 // Gaussian kernel function
@@ -14,7 +14,7 @@
 // - h is the smoothing length (in meters)
 //
 // Returns the influence of a particle on another particle (in 1/m)
-float gaussian_kernel_function(float x, float h) {
+float kernel_gaussian(float x, float h) {
     return (1.0f / (h * sqrtf(M_PI))) * expf(-1.0f * (x * x) / (h * h));
 }
 
@@ -32,8 +32,8 @@ float gaussian_kernel_function(float x, float h) {
 //
 // Returns the gradient of the influence of a particle on another particle (in
 // 1/m^2)
-float gaussian_kernel_function_derivative(float x, float h) {
-    return (-2.0f * x) / (h * h) * gaussian_kernel_function(x, h);
+float kernel_gaussian_derivative(float x, float h) {
+    return (-2.0f * x) / (h * h) * kernel_gaussian(x, h);
 }
 
 // Sebastian Lague's implementation of the kernel function
@@ -49,14 +49,14 @@ float gaussian_kernel_function_derivative(float x, float h) {
 // - h is the smoothing length (in meters)
 //
 // Returns the influence of a particle on another particle (in 1/m)
-float cubic_kernel_function(float x, float h) {
+float kernel_cubic(float x, float h) {
     float volume = M_PI * powf(h, 8) / 4.0f;
     float value = Max(0, h * h - x * x);
     return value * value * value / volume;
 }
 
 // Sebastian Lague's implementation of the derivative of the kernel function
-float cubic_kernel_function_derivative(float x, float h) {
+float kernel_cubic_derivative(float x, float h) {
     if (x > h) {
         return 0.0f;
     }
@@ -64,4 +64,31 @@ float cubic_kernel_function_derivative(float x, float h) {
     float f = h * h - x * x;
     float scale = -24.0 / (M_PI * powf(h, 8));
     return scale * x * f * f;
+}
+
+// Kernel wrapper function that selects the appropriate kernel function based on
+// the kernel type
+float kernel_function(float x, float h, enum kernel_type type) {
+    switch (type) {
+    case GAUSSIAN_KERNEL:
+        return kernel_gaussian(x, h);
+    case CUBIC_KERNEL:
+        return kernel_cubic(x, h);
+    default:
+        SPH_LOG_ERROR("Unknown kernel type %d", type);
+        return 0.0f;
+    }
+}
+
+// Kernel wrapper function that selects the appropriate kernel function based on
+// the kernel type
+float kernel_function_derivative(float x, float h, enum kernel_type type) {
+    switch (type) {
+    case GAUSSIAN_KERNEL:
+        return kernel_gaussian_derivative(x, h);
+    case CUBIC_KERNEL:
+        return kernel_cubic_derivative(x, h);
+    }
+
+    return 0.0f;
 }

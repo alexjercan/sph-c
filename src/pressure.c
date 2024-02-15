@@ -14,7 +14,7 @@
 // - density is the density at the point.
 //
 // Returns the pressure based on the density (in Pascals).
-float compute_pressure_cole(float density, float rest_density,
+float pressure_cole(float density, float rest_density,
                             float speed_of_sound, float adiabatic_index,
                             float background_pressure) {
     float B = rest_density * speed_of_sound * speed_of_sound / adiabatic_index;
@@ -34,7 +34,7 @@ float compute_pressure_cole(float density, float rest_density,
 // - density is the density at the point.
 //
 // Returns the pressure based on the density (in Pascals).
-float compute_pressure_gas(float density, float rest_density,
+float pressure_gas(float density, float rest_density,
                            float pressure_multiplier) {
     float density_error = density - rest_density;
     float pressure = density_error * pressure_multiplier;

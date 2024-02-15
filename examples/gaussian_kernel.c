@@ -54,7 +54,7 @@ void PlotGaussianKernel(float h) {
     // Draw the Gaussian kernel function
     Vector2 prev_point = (Vector2){0, 0};
     for (float x = x_start; x <= x_end; x += step) {
-        float y = gaussian_kernel_function(x, h);
+        float y = kernel_gaussian(x, h);
         float x_screen = (x - x_start) / (x_end - x_start) * width;
         float y_screen = (height * 0.9f - (y - y_start) / (y_end - y_start) * height * 0.9f);
 
