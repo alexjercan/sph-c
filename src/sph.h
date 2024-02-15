@@ -74,6 +74,7 @@ struct particle_array {
 enum kernel_type {
     GAUSSIAN_KERNEL,
     CUBIC_KERNEL,
+    LINEAR_KERNEL,
 };
 
 #if defined(__cplusplus)
@@ -98,6 +99,8 @@ SPH_EXPORT float kernel_gaussian(float x, float h);
 SPH_EXPORT float kernel_gaussian_derivative(float x, float h);
 SPH_EXPORT float kernel_cubic(float x, float h);
 SPH_EXPORT float kernel_cubic_derivative(float x, float h);
+SPH_EXPORT float kernel_linear(float x, float h);
+SPH_EXPORT float kernel_linear_derivative(float x, float h);
 SPH_EXPORT float kernel_function(float x, float h, enum kernel_type type);
 SPH_EXPORT float kernel_function_derivative(float x, float h,
                                             enum kernel_type type);

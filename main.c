@@ -5,18 +5,19 @@
 #include <string.h>
 #include <time.h>
 
+// TODO: update all the examples I guess
 // TODO: Implement the following functions:
 // - compute_influence for a point and visualize it using a heatmap
 // TODO: check for divisions by zero
 // Will need to figure out some good parameters but for that I need to use the
 // ini file
 
-// We are going to assume that the distance is measured in millimeters
+// We are going to assume that the distance is measured in centimeters
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
-#define FROM_SCREEN_TO_WORLD(x) ((x) / 1000.0f)
-#define FROM_WORLD_TO_SCREEN(x) ((x) * 1000.0f)
+#define FROM_SCREEN_TO_WORLD(x) ((x) / 100.0f)
+#define FROM_WORLD_TO_SCREEN(x) ((x) * 100.0f)
 
 // This will move to sph.h with the pressure thing
 enum pressure_type {
@@ -64,9 +65,6 @@ float compute_pressure(float density, struct simulation_parameters params) {
     }
 }
 
-/*
-// TODO: Think about this one and move it into sph
-// this might also be possible to move into the particle.c file
 Vector2 compute_movement(struct particle_array *particles, int i,
                          struct simulation_parameters params) {
     Vector2 movement = {0.0f, 0.0f};
@@ -79,7 +77,7 @@ Vector2 compute_movement(struct particle_array *particles, int i,
                                       particles->items[j].position);
         float x = Vector2Length(dir);
         float influence =
-            kernel_function(x, params.h, params.kernel_function_type);
+            kernel_function(x, params.h, params.kernel_type);
         float avg_density =
             (particles->items[i].density + particles->items[j].density) / 2.0f;
         Vector2 v_ba = Vector2Subtract(particles->items[j].velocity,
@@ -94,7 +92,27 @@ Vector2 compute_movement(struct particle_array *particles, int i,
 
     return movement;
 }
-*/
+
+void resolve_collisions(struct particle *particle, Vector2 position,
+                        struct simulation_parameters params) {
+    if (position.x < 0) {
+        position.x = 0;
+        particle->velocity.x *= -1.0f * params.damping;
+    } else if (position.x > params.width) {
+        position.x = params.width;
+        particle->velocity.x *= -1.0f * params.damping;
+    }
+
+    if (position.y < 0) {
+        position.y = 0;
+        particle->velocity.y *= -1.0f * params.damping;
+    } else if (position.y > params.height) {
+        position.y = params.height;
+        particle->velocity.y *= -1.0f * params.damping;
+    }
+
+    particle->position = position;
+}
 
 void simulation_step(struct particle_array *particles,
                      struct simulation_parameters params) {
@@ -105,29 +123,11 @@ void simulation_step(struct particle_array *particles,
             particles, i, params.h, params.particle_mass, params.kernel_type);
         particles->items[i].pressure =
             compute_pressure(particles->items[i].density, params);
-
-        printf("Particle %d: density = %f, pressure = %f\n", i,
-               particles->items[i].density, particles->items[i].pressure);
     }
 
     for (int i = 0; i < particles->count; i++) {
         Vector2 pressure_gradient = particle_pressure_gradient(
             particles, i, params.h, params.particle_mass, params.kernel_type);
-
-        printf("Particle %d: pressure_gradient = (%f, %f)\n", i,
-               pressure_gradient.x, pressure_gradient.y);
-
-        Vector2 screen_pressure_gradient =
-            (Vector2){pressure_gradient.x, pressure_gradient.y};
-
-        Vector2 screen_start_position = (Vector2){
-            FROM_WORLD_TO_SCREEN(particles->items[i].position.x),
-            FROM_WORLD_TO_SCREEN(particles->items[i].position.y),
-        };
-        Vector2 screen_end_position =
-            Vector2Add(screen_start_position, screen_pressure_gradient);
-
-        DrawLineV(screen_start_position, screen_end_position, GREEN);
 
         Vector2 pressure_acceleration =
             Vector2Scale(pressure_gradient, 1.0f / particles->items[i].density);
@@ -142,28 +142,12 @@ void simulation_step(struct particle_array *particles,
     }
 
     for (int i = 0; i < particles->count; i++) {
-        // Vector2 movement = compute_movement(particles, i, params);
+        Vector2 movement = compute_movement(particles, i, params);
         Vector2 position =
             Vector2Add(particles->items[i].position,
-                       Vector2Scale(particles->items[i].velocity, dt));
+                       Vector2Scale(movement, dt));
 
-        if (position.x < 0) {
-            position.x = 0;
-            particles->items[i].velocity.x *= -1.0f * params.damping;
-        } else if (position.x > params.width) {
-            position.x = params.width;
-            particles->items[i].velocity.x *= -1.0f * params.damping;
-        }
-
-        if (position.y < 0) {
-            position.y = 0;
-            particles->items[i].velocity.y *= -1.0f * params.damping;
-        } else if (position.y > params.height) {
-            position.y = params.height;
-            particles->items[i].velocity.y *= -1.0f * params.damping;
-        }
-
-        particles->items[i].position = position;
+        resolve_collisions(&particles->items[i], position, params);
     }
 }
 
@@ -172,21 +156,17 @@ int main() {
 
     struct simulation_parameters params = {
         .particle_count = 512,
-        .gravity = 9.81f,
+        .gravity = 9.0f,
         .width = FROM_SCREEN_TO_WORLD(SCREEN_WIDTH),
         .height = FROM_SCREEN_TO_WORLD(SCREEN_HEIGHT),
-        .particle_radius = 0.005f,
+        .particle_radius = 0.05f,
         .particle_mass = 0.1f,
-        .damping = 0.6f,
-        .rest_density = 1000.0f,
-        .adiabatic_index = 7.0f,
-        .speed_of_sound = 1000.0f,
-        .background_pressure = 1000000.0f,
-        .pressure_multiplier = 0.01f,
+        .damping = 0.5f,
+        .rest_density = 1.4f,
+        .pressure_multiplier = 100.0f,
         .pressure_type = GAS_PRESSURE,
-        .epsilon = 0.9f,
-        .kernel_type = GAUSSIAN_KERNEL,
-        .h = 0.2f,
+        .kernel_type = CUBIC_KERNEL,
+        .h = 1.2f,
     };
 
     struct particle ps[params.particle_count];

@@ -66,6 +66,26 @@ float kernel_cubic_derivative(float x, float h) {
     return scale * x * f * f;
 }
 
+// Sebastian Lague's linear kernel function
+float kernel_linear(float x, float h) {
+    if (x >= h) {
+        return 0.0f;
+    }
+
+    float volume = (M_PI * powf(h, 4)) / 6.0f;
+    return (h - x) * (h - x) / volume;
+}
+
+// Sebastian Lague's linear kernel derivative
+float kernel_linear_derivative(float x, float h) {
+    if (x >= h) {
+        return 0.0f;
+    }
+
+    float scale = 12.0f / (M_PI * powf(h, 4));
+    return (h - x) * scale;
+}
+
 // Kernel wrapper function that selects the appropriate kernel function based on
 // the kernel type
 float kernel_function(float x, float h, enum kernel_type type) {
@@ -74,6 +94,8 @@ float kernel_function(float x, float h, enum kernel_type type) {
         return kernel_gaussian(x, h);
     case CUBIC_KERNEL:
         return kernel_cubic(x, h);
+    case LINEAR_KERNEL:
+        return kernel_linear(x, h);
     default:
         SPH_LOG_ERROR("Unknown kernel type %d", type);
         return 0.0f;
@@ -88,6 +110,11 @@ float kernel_function_derivative(float x, float h, enum kernel_type type) {
         return kernel_gaussian_derivative(x, h);
     case CUBIC_KERNEL:
         return kernel_cubic_derivative(x, h);
+    case LINEAR_KERNEL:
+        return kernel_linear_derivative(x, h);
+    default:
+        SPH_LOG_ERROR("Unknown kernel type %d", type);
+        return 0.0f;
     }
 
     return 0.0f;

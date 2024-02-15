@@ -96,7 +96,7 @@ float particle_density(struct particle_array *particles, int i, float h,
         density += influence * particle_mass;
     }
 
-    return density;
+    return Max(density, 1e-6f);
 }
 
 // Computes the gradient of the pressure force of particle i with respect to the
@@ -145,7 +145,7 @@ Vector2 particle_pressure_gradient(struct particle_array *particles, int i,
         float slope = kernel_function_derivative(x, h, kernel_type);
         float density = particles->items[j].density;
         float pressure = particles->items[j].pressure;
-        float scale = -1.0 * pressure * slope * particle_mass / density;
+        float scale = 1.0 * pressure * slope * particle_mass / density;
 
         force = Vector2Add(force, Vector2Scale(dir, scale));
     }
