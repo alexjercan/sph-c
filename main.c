@@ -6,12 +6,13 @@
 #include <string.h>
 #include <time.h>
 
-// TODO: update all the examples I guess
-// TODO: Implement the following functions:
-// - compute_influence for a point and visualize it using a heatmap
 // TODO: check for divisions by zero
-// Will need to figure out some good parameters but for that I need to use the
-// ini file
+// TODO: Will need to figure out some good parameters but for that I need to use
+// the ini file
+// TODO: check the pressure gradient; pressure looks fine but the particles move
+// kind of strangely towards high pressure areas; it kind of looks like all the
+// particles move towards the rest density instead of trying to create the rest
+// density
 
 // We are going to assume that the distance is measured in centimeters
 #define SCREEN_WIDTH 800
@@ -75,33 +76,6 @@ void *get_pressure_params(struct simulation_parameters params) {
     return pressure_params;
 }
 
-Vector2 compute_movement(struct particle_array *particles, int i,
-                         struct simulation_parameters params) {
-    Vector2 movement = {0.0f, 0.0f};
-    for (int j = 0; j < particles->count; j++) {
-        if (i == j) {
-            continue;
-        }
-
-        Vector2 dir = Vector2Subtract(particles->items[i].position,
-                                      particles->items[j].position);
-        float x = Vector2Length(dir);
-        float influence = kernel_function(x, params.h, params.kernel_type);
-        float avg_density =
-            (particles->items[i].density + particles->items[j].density) / 2.0f;
-        Vector2 v_ba = Vector2Subtract(particles->items[j].velocity,
-                                       particles->items[i].velocity);
-        Vector2 v =
-            Vector2Scale(v_ba, influence * params.particle_mass / avg_density);
-        movement = Vector2Add(movement, v);
-    }
-
-    movement = Vector2Scale(movement, params.epsilon);
-    movement = Vector2Add(movement, particles->items[i].velocity);
-
-    return movement;
-}
-
 void resolve_collisions(struct particle *particle, Vector2 position,
                         struct simulation_parameters params) {
     if (position.x < 0) {
@@ -153,9 +127,9 @@ void simulation_step(struct particle_array *particles,
     }
 
     for (int i = 0; i < particles->count; i++) {
-        // Vector2 movement = compute_movement(particles, i, params);
-        Vector2 position = Vector2Add(particles->items[i].position,
-                                      Vector2Scale(particles->items[i].velocity, dt));
+        Vector2 position =
+            Vector2Add(particles->items[i].position,
+                       Vector2Scale(particles->items[i].velocity, dt));
 
         resolve_collisions(&particles->items[i], position, params);
     }
@@ -226,7 +200,7 @@ int main() {
         .particle_radius = 0.05f,
         .particle_mass = 0.1f,
         .damping = 0.5f,
-        .rest_density = 0.3f,
+        .rest_density = 0.4f,
         .pressure_multiplier = 10.0f,
         .pressure_type = GAS_PRESSURE,
         .kernel_type = GAUSSIAN_KERNEL,

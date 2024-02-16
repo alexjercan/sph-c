@@ -167,7 +167,9 @@ Vector2 particle_pressure_gradient(struct particle_array *particles, int i,
 
         float slope = kernel_function_derivative(x, h, kernel_type);
         float density = particles->items[j].density;
-        float pressure = particles->items[j].pressure;
+        float pressure_i = particles->items[j].pressure;
+        float pressure_j = particles->items[j].pressure;
+        float pressure = (pressure_i + pressure_j) / 2.0f;
         float scale = 1.0 * pressure * slope * particle_mass / density;
 
         force = Vector2Add(force, Vector2Scale(dir, scale));
