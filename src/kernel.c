@@ -57,7 +57,7 @@ float kernel_cubic(float x, float h) {
 
 // Sebastian Lague's implementation of the derivative of the kernel function
 float kernel_cubic_derivative(float x, float h) {
-    if (x > h) {
+    if (x > h || x < -h) {
         return 0.0f;
     }
 

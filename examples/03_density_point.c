@@ -3,18 +3,18 @@
 #include "sph.h"
 #include <time.h>
 
-#define FROM_SCREEN_TO_WORLD(x) ((x) / 1000.0f)
-#define FROM_WORLD_TO_SCREEN(x) ((x) * 1000.0f)
+#define FROM_SCREEN_TO_WORLD(x) ((x) / 100.0f)
+#define FROM_WORLD_TO_SCREEN(x) ((x) * 100.0f)
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define PARTICLE_COUNT 100
 #define PARTICLE_MASS 0.1f
-#define PARTICLE_RADIUS 0.01f
+#define PARTICLE_RADIUS 0.1f
 #define MIN_H 0.1f
-#define MAX_H 0.5f
-#define MIN_SPACING 0.01f
-#define MAX_SPACING 0.1f
+#define MAX_H 2.5f
+#define MIN_SPACING 0.1f
+#define MAX_SPACING 1.0f
 
 float compute_density(struct particle_array *particles, Vector2 point,
                       float h) {
@@ -83,10 +83,10 @@ int main() {
         ClearBackground(DARKGRAY);
 
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            spacing += GetMouseWheelMove() * 0.01f;
+            spacing += GetMouseWheelMove() * 0.1f;
             spacing = Clamp(spacing, MIN_SPACING, MAX_SPACING);
         } else {
-            h += GetMouseWheelMove() * 0.025f;
+            h += GetMouseWheelMove() * 0.25f;
             h = Clamp(h, MIN_H, MAX_H);
         }
 

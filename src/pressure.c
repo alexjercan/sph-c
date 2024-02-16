@@ -14,9 +14,8 @@
 // - density is the density at the point.
 //
 // Returns the pressure based on the density (in Pascals).
-float pressure_cole(float density, float rest_density,
-                            float speed_of_sound, float adiabatic_index,
-                            float background_pressure) {
+float pressure_cole(float density, float rest_density, float speed_of_sound,
+                    float adiabatic_index, float background_pressure) {
     float B = rest_density * speed_of_sound * speed_of_sound / adiabatic_index;
     float x = powf(density / rest_density, adiabatic_index) - 1.0f;
 
@@ -35,8 +34,23 @@ float pressure_cole(float density, float rest_density,
 //
 // Returns the pressure based on the density (in Pascals).
 float pressure_gas(float density, float rest_density,
-                           float pressure_multiplier) {
+                   float pressure_multiplier) {
     float density_error = density - rest_density;
     float pressure = density_error * pressure_multiplier;
     return pressure;
+}
+
+// Wrapper function to compute the pressure at a given point
+float pressure_value(float density, void *params, enum pressure_type type) {
+    switch (type) {
+    case COLE_PRESSURE: {
+        struct pressure_cole_params *p = (struct pressure_cole_params *)params;
+        return pressure_cole(density, p->rest_density, p->speed_of_sound,
+                             p->adiabatic_index, p->background_pressure);
+    }
+    case GAS_PRESSURE: {
+        struct pressure_gas_params *p = (struct pressure_gas_params *)params;
+        return pressure_gas(density, p->rest_density, p->pressure_multiplier);
+    }
+    }
 }

@@ -99,6 +99,29 @@ float particle_density(struct particle_array *particles, int i, float h,
     return Max(density, 1e-6f);
 }
 
+// Computes the density of a point with respect to the particles
+//
+// Arguments:
+// - particles: the array of particles
+// - pos: the position of the point
+// - h: the smoothing length (in meters)
+// - particle_mass: the mass of a particle (in kg)
+// - type: the type of kernel function to use
+//
+// Returns the density of the point (in kg/m^3)
+float position_density(struct particle_array *particles, Vector2 pos, float h,
+                       float particle_mass, enum kernel_type type) {
+    float density = 0.0f;
+    for (int j = 0; j < particles->count; j++) {
+        Vector2 dir = Vector2Subtract(pos, particles->items[j].position);
+        float x = Vector2Length(dir);
+        float influence = kernel_function(x, h, type);
+        density += influence * particle_mass;
+    }
+
+    return density;
+}
+
 // Computes the gradient of the pressure force of particle i with respect to the
 // other particles
 //

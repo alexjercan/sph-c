@@ -10,7 +10,7 @@
 #define Y_RANGE_END 3.0f
 #define STEP 0.1f
 
-void PlotCubicKernel(float h) {
+void PlotGaussianKernel(float h) {
     float width = SCREEN_WIDTH * 1.0f;
     float height = SCREEN_HEIGHT * 1.0f;
     float x_start = X_RANGE_START;
@@ -54,7 +54,7 @@ void PlotCubicKernel(float h) {
     // Draw the Gaussian kernel function
     Vector2 prev_point = (Vector2){0, 0};
     for (float x = x_start; x <= x_end; x += step) {
-        float y = kernel_cubic(x, h);
+        float y = kernel_gaussian(x, h);
         float x_screen = (x - x_start) / (x_end - x_start) * width;
         float y_screen = (height * 0.9f - (y - y_start) / (y_end - y_start) * height * 0.9f);
 
@@ -65,10 +65,25 @@ void PlotCubicKernel(float h) {
         prev_point.x = x_screen;
         prev_point.y = y_screen;
     }
+
+    // Draw the derivative of the Gaussian kernel function
+    prev_point = (Vector2){0, 0};
+    for (float x = x_start; x <= x_end; x += step) {
+        float y = kernel_gaussian_derivative(x, h);
+        float x_screen = (x - x_start) / (x_end - x_start) * width;
+        float y_screen = (height * 0.9f - (y - y_start) / (y_end - y_start) * height * 0.9f);
+
+        DrawCircleV((Vector2){x_screen, y_screen}, 2, GREEN);
+        if (x != x_start) {
+            DrawLineEx(prev_point, (Vector2){x_screen, y_screen}, 1, GREEN);
+        }
+        prev_point.x = x_screen;
+        prev_point.y = y_screen;
+    }
 }
 
 int main() {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Cubic Kernel Function");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Gaussian Kernel Function");
 
     SetTargetFPS(60);
     float h = 1.0;
@@ -80,7 +95,7 @@ int main() {
         h += GetMouseWheelMove() * 0.1f;
         h = Clamp(h, 0.1f, (X_RANGE_END - X_RANGE_START) / 2.0f);
 
-        PlotCubicKernel(h);
+        PlotGaussianKernel(h);
 
         DrawText(TextFormat("h: %f m (scroll to change)", h), 10, 10, 20, WHITE);
 

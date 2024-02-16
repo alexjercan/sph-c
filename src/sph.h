@@ -71,10 +71,29 @@ struct particle_array {
         int capacity;
 };
 
+// Kernel types
 enum kernel_type {
     GAUSSIAN_KERNEL,
     CUBIC_KERNEL,
     LINEAR_KERNEL,
+};
+
+// Pressure types
+enum pressure_type {
+    COLE_PRESSURE,
+    GAS_PRESSURE,
+};
+
+struct pressure_cole_params {
+        float rest_density;
+        float speed_of_sound;
+        float adiabatic_index;
+        float background_pressure;
+};
+
+struct pressure_gas_params {
+        float rest_density;
+        float pressure_multiplier;
 };
 
 #if defined(__cplusplus)
@@ -87,6 +106,9 @@ SPH_EXPORT void particles_init_grid(struct particle_array *particles,
 SPH_EXPORT void particles_init_rand(struct particle_array *particles,
                                     float width, float height);
 SPH_EXPORT float particle_density(struct particle_array *particles, int i,
+                                  float h, float particle_mass,
+                                  enum kernel_type type);
+SPH_EXPORT float position_density(struct particle_array *particles, Vector2 pos,
                                   float h, float particle_mass,
                                   enum kernel_type type);
 SPH_EXPORT Vector2 particle_pressure_gradient(struct particle_array *particles,
@@ -111,6 +133,8 @@ SPH_EXPORT float pressure_cole(float density, float rest_density,
                                float background_pressure);
 SPH_EXPORT float pressure_gas(float density, float rest_density,
                               float pressure_multiplier);
+SPH_EXPORT float pressure_value(float density, void *params,
+                                enum pressure_type type);
 
 #if defined(__cplusplus)
 } // extern "C"

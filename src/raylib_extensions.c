@@ -27,3 +27,12 @@ float Max(float a, float b) { return a > b ? a : b; }
 Vector2 Vector2Random(float min, float max) {
     return (Vector2){GetRandomFloat(min, max), GetRandomFloat(min, max)};
 }
+
+Color ColorGradient(Color start, Color end, float t) {
+    return (Color){
+        (unsigned char)(start.r + (end.r - start.r) * t),
+        (unsigned char)(start.g + (end.g - start.g) * t),
+        (unsigned char)(start.b + (end.b - start.b) * t),
+        (unsigned char)(start.a + (end.a - start.a) * t),
+    };
+}

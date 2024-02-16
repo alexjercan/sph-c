@@ -8,5 +8,6 @@ void DrawCircleGradientV(Vector2 position, float radius, Color color1,
                          Color color2);
 float Max(float a, float b);
 Vector2 Vector2Random(float min, float max);
+Color ColorGradient(Color start, Color end, float t);
 
 #endif // RAYLIB_EXTENSIONS_H
