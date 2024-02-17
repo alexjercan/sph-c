@@ -121,9 +121,8 @@ void simulation_step(struct particle_array *particles,
         Vector2 acceleration =
             Vector2Add(pressure_acceleration, gravity_acceleration);
 
-        particles->items[i].velocity =
-            Vector2Scale(acceleration, dt); // Vector2Add(
-                                            // particles->items[i].velocity, );
+        particles->items[i].velocity = Vector2Add(
+            particles->items[i].velocity, Vector2Scale(acceleration, dt));
     }
 
     for (int i = 0; i < particles->count; i++) {
@@ -206,7 +205,7 @@ int main() {
         .particle_radius = 0.05f,
         .particle_mass = 1.0f,
         .damping = 0.5f,
-        .rest_density = 1.4f,
+        .rest_density = 0.8f,
         .pressure_multiplier = 100.0f,
         .pressure_type = GAS_PRESSURE,
         .kernel_type = GAUSSIAN_KERNEL,

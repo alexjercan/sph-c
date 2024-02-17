@@ -68,7 +68,7 @@ float kernel_cubic_derivative(float x, float h) {
 
 // Sebastian Lague's linear kernel function
 float kernel_linear(float x, float h) {
-    if (x >= h) {
+    if (x >= h || x <= -h) {
         return 0.0f;
     }
 
@@ -78,7 +78,7 @@ float kernel_linear(float x, float h) {
 
 // Sebastian Lague's linear kernel derivative
 float kernel_linear_derivative(float x, float h) {
-    if (x >= h) {
+    if (x >= h || x <= -h) {
         return 0.0f;
     }
 

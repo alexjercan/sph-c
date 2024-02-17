@@ -162,8 +162,8 @@ Vector2 particle_pressure_gradient(struct particle_array *particles, int i,
             continue;
         }
 
-        Vector2 offset = Vector2Subtract(particles->items[j].position,
-                                         particles->items[i].position);
+        Vector2 offset = Vector2Subtract(particles->items[i].position,
+                                         particles->items[j].position);
         float x = Vector2Length(offset);
         Vector2 dir = Vector2Normalize(offset);
 
@@ -172,7 +172,7 @@ Vector2 particle_pressure_gradient(struct particle_array *particles, int i,
         float pressure_i = particles->items[j].pressure;
         float pressure_j = particles->items[j].pressure;
         float pressure = (pressure_i + pressure_j) / 2.0f;
-        float scale = 1.0 * pressure * slope * particle_mass / density;
+        float scale = -1.0 * pressure * slope * particle_mass / density;
 
         force = Vector2Add(force, Vector2Scale(dir, scale));
     }
