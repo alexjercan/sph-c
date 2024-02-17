@@ -244,7 +244,7 @@ int main() {
                 (Vector2){FROM_WORLD_TO_SCREEN(particles.items[i].position.x),
                           FROM_WORLD_TO_SCREEN(particles.items[i].position.y)};
             float screen_radius = FROM_WORLD_TO_SCREEN(params.particle_radius);
-            DrawCircleV(screen_position, screen_radius, BLUE);
+            DrawCircleV(screen_position, screen_radius, GREEN);
         }
 
         EndDrawing();
