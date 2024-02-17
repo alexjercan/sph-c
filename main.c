@@ -349,7 +349,7 @@ int main() {
 
     unsigned int debug = 0;
 
-    struct particle ps[params.particle_count];
+    struct particle *ps = calloc(params.particle_count, sizeof(struct particle));
     struct particle_array particles = {
         .items = ps,
         .count = params.particle_count,
@@ -363,7 +363,23 @@ int main() {
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
-        if (IsKeyDown(KEY_R)) {
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            Vector2 mouse_position = GetMousePosition();
+            Vector2 world_position = {
+                FROM_SCREEN_TO_WORLD(mouse_position.x),
+                FROM_SCREEN_TO_WORLD(mouse_position.y),
+            };
+            struct particle p = {
+                .position = world_position,
+                .velocity = (Vector2){0.0f, 0.0f},
+                .density = 0.0f,
+                .pressure = 0.0f,
+            };
+            ini_da_append(&particles, p);
+        }
+
+        if (IsKeyReleased(KEY_R)) {
+            particles.count = params.particle_count;
             particles_init_rand(&particles, params.width, params.height);
         }
 
@@ -378,21 +394,22 @@ int main() {
             params.gravity = Clamp(params.gravity, -10.0f, 10.0f);
         }
 
-        BeginDrawing();
-        ClearBackground(DARKGRAY);
-
         if (IsKeyDown(KEY_SPACE)) {
             simulation_step(&particles, params);
         }
 
-        if (IsKeyReleased(KEY_P)) {
+        if (IsKeyPressed(KEY_F1)) {
             debug = !debug;
         }
+
+        BeginDrawing();
+        ClearBackground(DARKGRAY);
 
         if (debug) {
             DrawPressureTexture(&particles, params);
         }
 
+        // Draw particles
         for (int i = 0; i < particles.count; i++) {
             Vector2 screen_position =
                 (Vector2){FROM_WORLD_TO_SCREEN(particles.items[i].position.x),
@@ -401,6 +418,7 @@ int main() {
             DrawCircleV(screen_position, screen_radius, GREEN);
         }
 
+        // Draw parameters
         DrawText(TextFormat("h: %f (left shift)", params.h), 10, 10, 20, WHITE);
         DrawText(TextFormat("rho: %f (left ctrl)", params.rest_density), 10, 30,
                  20, WHITE);
