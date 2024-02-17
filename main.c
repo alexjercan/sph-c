@@ -1,3 +1,5 @@
+#define INI_IMPLEMENTATION
+#include "include/ini.h"
 #include "raylib.h"
 #include "raylib_extensions.h"
 #include "raymath.h"
@@ -6,24 +8,22 @@
 #include <string.h>
 #include <time.h>
 
-// TODO: check for divisions by zero
-// TODO: Will need to figure out some good parameters but for that I need to use
-// the ini file
-// TODO: check the pressure gradient; pressure looks fine but the particles move
-// kind of strangely towards high pressure areas; it kind of looks like all the
-// particles move towards the rest density instead of trying to create the rest
-// density
+#define ASSERT(condition, format, ...)                                         \
+    do {                                                                       \
+        if (!(condition)) {                                                    \
+            INI_PANIC(format, ##__VA_ARGS__);                                  \
+        }                                                                      \
+    } while (0)
 
-// We are going to assume that the distance is measured in centimeters
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
+// We are going to assume that the distance is measured in centimeters
 #define FROM_SCREEN_TO_WORLD(x) ((x) / 100.0f)
 #define FROM_WORLD_TO_SCREEN(x) ((x) * 100.0f)
 
 #define SCALE_FACTOR 25
 
-// The parameters for the simulation TODO use parser-ini for this
 struct simulation_parameters {
         // World
         int particle_count; // Number of particles
@@ -40,7 +40,6 @@ struct simulation_parameters {
         float rest_density;               // Rest density (in kg/m^3)
         float adiabatic_index;            // Adiabatic index
         float speed_of_sound;             // Speed of sound (in m/s)
-        float epsilon;                    // Epsilon
         float background_pressure;        // Background pressure (in Pa)
         float pressure_multiplier;        // Pressure multiplier
         enum pressure_type pressure_type; // Pressure type
@@ -49,6 +48,132 @@ struct simulation_parameters {
         enum kernel_type kernel_type; // Kernel function type
         float h;                      // Smoothing length (in meters)
 };
+
+void simulation_parameters_parse(char *filename,
+                                 struct simulation_parameters *params) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: Could not open file %s\n", filename);
+        exit(1);
+    }
+
+    int buffer_count = 0;
+    int buffer_capacity = 256;
+    char *buffer = calloc(buffer_capacity, sizeof(char));
+    ASSERT(buffer != NULL, "Could not allocate memory");
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        int len = strlen(line);
+        if (buffer_count + len + 1 >= buffer_capacity) {
+            buffer_capacity = buffer_capacity * 2 + len;
+            buffer = realloc(buffer, buffer_capacity * sizeof(char));
+            ASSERT(buffer != NULL, "Could not allocate memory");
+        }
+
+        strcpy(buffer + buffer_count, line);
+        buffer_count += len;
+        buffer[buffer_count] = '\0';
+    }
+
+    struct ini_file ini = {0};
+    ini_parse(&ini, buffer);
+
+    char *value = NULL;
+
+    value = ini_get_value(&ini, "world", "particle_count");
+    ASSERT(value != NULL, "Could not find particle_count");
+    params->particle_count = atoi(value);
+    free(value);
+
+    value = ini_get_value(&ini, "world", "gravity");
+    ASSERT(value != NULL, "Could not find gravity");
+    params->gravity = atof(value);
+    free(value);
+
+    params->width = FROM_SCREEN_TO_WORLD(SCREEN_WIDTH);
+    params->height = FROM_SCREEN_TO_WORLD(SCREEN_HEIGHT);
+
+    value = ini_get_value(&ini, "particle", "radius");
+    ASSERT(value != NULL, "Could not find particle_radius");
+    params->particle_radius = atof(value);
+    free(value);
+
+    value = ini_get_value(&ini, "particle", "mass");
+    ASSERT(value != NULL, "Could not find particle_mass");
+    params->particle_mass = atof(value);
+    free(value);
+
+    value = ini_get_value(&ini, "particle", "damping");
+    ASSERT(value != NULL, "Could not find damping");
+    params->damping = atof(value);
+    free(value);
+
+    char *value1 = ini_get_value(&ini, "pressure", "type");
+    ASSERT(value1 != NULL, "Could not find pressure_type");
+    if (strcmp(value1, "cole") == 0) {
+        params->pressure_type = COLE_PRESSURE;
+
+        value = ini_get_value(&ini, "pressure.cole", "rest_density");
+        ASSERT(value != NULL, "Could not find rest_density");
+        params->rest_density = atof(value);
+        free(value);
+
+        value = ini_get_value(&ini, "pressure.cole", "adiabatic_index");
+        ASSERT(value != NULL, "Could not find adiabatic_index");
+        params->adiabatic_index = atof(value);
+        free(value);
+
+        value = ini_get_value(&ini, "pressure.cole", "speed_of_sound");
+        ASSERT(value != NULL, "Could not find speed_of_sound");
+        params->speed_of_sound = atof(value);
+        free(value);
+
+        value = ini_get_value(&ini, "pressure.cole", "background_pressure");
+        ASSERT(value != NULL, "Could not find background_pressure");
+        params->background_pressure = atof(value);
+        free(value);
+    } else if (strcmp(value1, "gas") == 0) {
+        params->pressure_type = GAS_PRESSURE;
+
+        value = ini_get_value(&ini, "pressure.gas", "rest_density");
+        ASSERT(value != NULL, "Could not find rest_density");
+        params->rest_density = atof(value);
+        free(value);
+
+        value = ini_get_value(&ini, "pressure.gas", "pressure_multiplier");
+        ASSERT(value != NULL, "Could not find pressure_multiplier");
+        params->pressure_multiplier = atof(value);
+        free(value);
+    } else {
+        INI_PANIC("Invalid pressure type");
+    }
+    free(value1);
+
+    value = ini_get_value(&ini, "kernel", "type");
+    ASSERT(value != NULL, "Could not find kernel_type");
+    if (strcmp(value, "gaussian") == 0) {
+        params->kernel_type = GAUSSIAN_KERNEL;
+    } else if (strcmp(value, "linear") == 0) {
+        params->kernel_type = LINEAR_KERNEL;
+    } else if (strcmp(value, "cubic") == 0) {
+        params->kernel_type = CUBIC_KERNEL;
+    } else {
+        INI_PANIC("Invalid kernel type");
+    }
+    free(value);
+
+    value = ini_get_value(&ini, "kernel", "h");
+    ASSERT(value != NULL, "Could not find h");
+    params->h = atof(value);
+    free(value);
+
+    for (int i = 0; i < ini.count; i++) {
+        free(ini.items[i].items);
+    }
+    free(ini.items);
+    free(buffer);
+    fclose(file);
+}
 
 void *get_pressure_params(struct simulation_parameters params) {
     void *pressure_params;
@@ -192,25 +317,40 @@ void DrawPressureTexture(struct particle_array *particles,
     Texture2D texture = LoadTextureFromImage(img);
     DrawTexture(texture, 0, 0, WHITE);
     UnloadImage(img); // Unload the image as the texture now holds the data
+
+    for (int i = 0; i < particles->count; i++) {
+        particles->items[i].density = particle_density(
+            particles, i, params.h, params.particle_mass, params.kernel_type);
+        particles->items[i].pressure =
+            pressure_value(particles->items[i].density,
+                           get_pressure_params(params), params.pressure_type);
+    }
+
+    for (int i = 0; i < particles->count; i++) {
+        Vector2 pressure_gradient = particle_pressure_gradient(
+            particles, i, params.h, params.particle_mass, params.kernel_type);
+
+        Vector2 pressure_acceleration =
+            Vector2Scale(pressure_gradient, 1.0f / particles->items[i].density);
+
+        Vector2 screen_position_start =
+            (Vector2){FROM_WORLD_TO_SCREEN(particles->items[i].position.x),
+                      FROM_WORLD_TO_SCREEN(particles->items[i].position.y)};
+
+        Vector2 screen_position_end = Vector2Add(
+            screen_position_start, Vector2Scale(pressure_acceleration, 10.0f));
+
+        DrawLineV(screen_position_start, screen_position_end, GREEN);
+    }
 }
 
 int main() {
     SetRandomSeed(time(NULL));
 
-    struct simulation_parameters params = {
-        .particle_count = 20,
-        .gravity = 0.0f,
-        .width = FROM_SCREEN_TO_WORLD(SCREEN_WIDTH),
-        .height = FROM_SCREEN_TO_WORLD(SCREEN_HEIGHT),
-        .particle_radius = 0.05f,
-        .particle_mass = 1.0f,
-        .damping = 0.5f,
-        .rest_density = 0.8f,
-        .pressure_multiplier = 100.0f,
-        .pressure_type = GAS_PRESSURE,
-        .kernel_type = GAUSSIAN_KERNEL,
-        .h = 2.0f,
-    };
+    struct simulation_parameters params;
+    simulation_parameters_parse("params.ini", &params);
+
+    unsigned int debug = 0;
 
     struct particle ps[params.particle_count];
     struct particle_array particles = {
@@ -230,6 +370,14 @@ int main() {
             particles_init_rand(&particles, params.width, params.height);
         }
 
+        if (IsKeyDown(KEY_LEFT_SHIFT)) {
+            params.h += GetMouseWheelMove() * 0.1f;
+            params.h = Clamp(params.h, 1.0f, 5.5f);
+        } else if (IsKeyDown(KEY_LEFT_CONTROL)) {
+            params.rest_density += GetMouseWheelMove() * 0.1f;
+            params.rest_density = Clamp(params.rest_density, 0.1f, 3.5f);
+        }
+
         BeginDrawing();
         ClearBackground(DARKGRAY);
 
@@ -237,7 +385,13 @@ int main() {
             simulation_step(&particles, params);
         }
 
-        DrawPressureTexture(&particles, params);
+        if (IsKeyReleased(KEY_P)) {
+            debug = !debug;
+        }
+
+        if (debug) {
+            DrawPressureTexture(&particles, params);
+        }
 
         for (int i = 0; i < particles.count; i++) {
             Vector2 screen_position =
@@ -246,6 +400,10 @@ int main() {
             float screen_radius = FROM_WORLD_TO_SCREEN(params.particle_radius);
             DrawCircleV(screen_position, screen_radius, GREEN);
         }
+
+        DrawText(TextFormat("h: %f (left shift)", params.h), 10, 10, 20, WHITE);
+        DrawText(TextFormat("rho: %f (left ctrl)", params.rest_density), 10, 30,
+                 20, WHITE);
 
         EndDrawing();
     }

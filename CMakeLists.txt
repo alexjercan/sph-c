@@ -30,6 +30,8 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     target_link_libraries(${EXAMPLE_NAME} PRIVATE raylib)
 endforeach()
 
+# Main executable
 add_executable(main "${CMAKE_CURRENT_LIST_DIR}/main.c")
 target_link_libraries(main PRIVATE ${PROJECT_NAME})
 target_link_libraries(main PRIVATE raylib)
+target_include_directories(main PRIVATE "${CMAKE_CURRENT_LIST_DIR}/include")

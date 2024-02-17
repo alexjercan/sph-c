@@ -82,7 +82,7 @@ float kernel_linear_derivative(float x, float h) {
         return 0.0f;
     }
 
-    float scale = 12.0f / (M_PI * powf(h, 4));
+    float scale = -12.0f / (M_PI * powf(h, 4));
     return (h - x) * scale;
 }
 

@@ -91,6 +91,30 @@ void DrawPressureTexture(struct particle_array *particles, float h,
     Texture2D texture = LoadTextureFromImage(img);
     DrawTexture(texture, 0, 0, WHITE);
     UnloadImage(img); // Unload the image as the texture now holds the data
+
+    for (int i = 0; i < particles->count; i++) {
+        particles->items[i].density =
+            particle_density(particles, i, h, PARTICLE_MASS, GAUSSIAN_KERNEL);
+        particles->items[i].pressure =
+            compute_pressure(particles->items[i].density, rest_density);
+    }
+
+    for (int i = 0; i < particles->count; i++) {
+        Vector2 pressure_gradient = particle_pressure_gradient(
+            particles, i, h, PARTICLE_MASS, GAUSSIAN_KERNEL);
+
+        Vector2 pressure_acceleration =
+            Vector2Scale(pressure_gradient, 1.0f / particles->items[i].density);
+
+        Vector2 screen_position_start =
+            (Vector2){FROM_WORLD_TO_SCREEN(particles->items[i].position.x),
+                      FROM_WORLD_TO_SCREEN(particles->items[i].position.y)};
+
+        Vector2 screen_position_end = Vector2Add(
+            screen_position_start, Vector2Scale(pressure_acceleration, 10.0f));
+
+        DrawLineV(screen_position_start, screen_position_end, GREEN);
+    }
 }
 
 int main() {

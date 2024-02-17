@@ -4,50 +4,42 @@
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
-#define X_RANGE_START -4.0f
-#define X_RANGE_END 4.0f
-#define Y_RANGE_START 0.0f
-#define Y_RANGE_END 3.0f
-#define STEP 0.1f
 
 void PlotCubicKernel(float h) {
     float width = SCREEN_WIDTH * 1.0f;
     float height = SCREEN_HEIGHT * 1.0f;
-    float x_start = X_RANGE_START;
-    float x_end = X_RANGE_END;
-    float y_start = Y_RANGE_START;
-    float y_end = Y_RANGE_END;
-    float step = STEP;
+    float x_start = 0.0f;
+    float x_end = 4.0f;
+    float y_start = -2.0f;
+    float y_end = 2.0f;
+    float step = 0.025f;
 
     // Draw the x and y axes
-    DrawLineEx((Vector2){width / 2, 0}, (Vector2){width / 2, height}, 1, RED);
-    DrawLineEx((Vector2){0, height * 0.9f}, (Vector2){width, height * 0.9f}, 1,
+    DrawLineEx((Vector2){width * 0.1f, 0}, (Vector2){width * 0.1f, height}, 1, RED);
+    DrawLineEx((Vector2){0, height * 0.5f}, (Vector2){width, height * 0.5f}, 1,
                RED);
 
-    for (float x = x_start; x <= x_end; x += step * 5) {
-        float x_screen = (x - x_start) / (x_end - x_start) * width;
-        float y_screen = height * 0.9f;
+    // Draw the ticks and labels for x axis
+    for (float x = x_start; x <= x_end; x += 0.5f) {
+        float x_screen = ((x - x_start) / (x_end - x_start) * width) + (width * 0.1f);
+        float y_screen = height * 0.5f;
         DrawText(TextFormat("%.1f", x), x_screen - 10, y_screen + 10, 10, WHITE);
         DrawCircleV((Vector2){x_screen, y_screen}, 2, RED);
 
     }
 
-    for (float y = y_start; y <= y_end; y += step * 5) {
-        float x_screen = (width / 2);
-        float y_screen = (height * 0.9f - (y - y_start) / (y_end - y_start) * height * 0.9f);
+    // Draw the ticks and labels for y axis
+    for (float y = y_start; y <= y_end; y += 0.5f) {
+        float x_screen = width * 0.1f;
+        float y_screen = height - ((y - y_start) / (y_end - y_start) * height);
         DrawText(TextFormat("%.1f", y), x_screen + 5, y_screen - 10, 10, WHITE);
         DrawCircleV((Vector2){x_screen, y_screen}, 2, RED);
     }
 
-    // Draw two vertical lines at -h and h
+    // Draw vertical lines at h
     DrawLineEx(
-        (Vector2){(-h - x_start) / (x_end - x_start) * width, 0},
-        (Vector2){(-h - x_start) / (x_end - x_start) * width,
-                  height},
-        1, WHITE);
-    DrawLineEx(
-        (Vector2){(h - x_start) / (x_end - x_start) * width, 0},
-        (Vector2){(h - x_start) / (x_end - x_start) * width,
+        (Vector2){(h - x_start) / (x_end - x_start) * width + width * 0.1f, 0},
+        (Vector2){(h - x_start) / (x_end - x_start) * width + width * 0.1f,
                   height},
         1, WHITE);
 
@@ -55,8 +47,8 @@ void PlotCubicKernel(float h) {
     Vector2 prev_point = (Vector2){0, 0};
     for (float x = x_start; x <= x_end; x += step) {
         float y = kernel_linear(x, h);
-        float x_screen = (x - x_start) / (x_end - x_start) * width;
-        float y_screen = (height * 0.9f - (y - y_start) / (y_end - y_start) * height * 0.9f);
+        float x_screen = ((x - x_start) / (x_end - x_start) * width) + (width * 0.1f);
+        float y_screen = height - ((y - y_start) / (y_end - y_start) * height);
 
         DrawCircleV((Vector2){x_screen, y_screen}, 2, BLUE);
         if (x != x_start) {
@@ -70,8 +62,8 @@ void PlotCubicKernel(float h) {
     prev_point = (Vector2){0, 0};
     for (float x = x_start; x <= x_end; x += step) {
         float y = kernel_linear_derivative(x, h);
-        float x_screen = (x - x_start) / (x_end - x_start) * width;
-        float y_screen = (height * 0.9f - (y - y_start) / (y_end - y_start) * height * 0.9f);
+        float x_screen = ((x - x_start) / (x_end - x_start) * width) + (width * 0.1f);
+        float y_screen = height - ((y - y_start) / (y_end - y_start) * height);
 
         DrawCircleV((Vector2){x_screen, y_screen}, 2, GREEN);
         if (x != x_start) {
@@ -93,7 +85,7 @@ int main() {
         ClearBackground(DARKGRAY);
 
         h += GetMouseWheelMove() * 0.1f;
-        h = Clamp(h, 0.1f, (X_RANGE_END - X_RANGE_START) / 2.0f);
+        h = Clamp(h, 0.1f, 3.5f);
 
         PlotCubicKernel(h);
 
