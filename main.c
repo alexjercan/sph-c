@@ -140,7 +140,6 @@ void DrawPressureTexture(struct particle_array *particles,
 
     float pressure[SCREEN_WIDTH / SCALE_FACTOR][SCREEN_HEIGHT / SCALE_FACTOR] =
         {0};
-    float max_pressure = 0.0f;
     for (int i = 0; i < particles->count; i++) {
         for (int x = 0; x < SCREEN_WIDTH; x += SCALE_FACTOR) {
             for (int y = 0; y < SCREEN_HEIGHT; y += SCALE_FACTOR) {
@@ -152,9 +151,16 @@ void DrawPressureTexture(struct particle_array *particles,
                                      params.particle_mass, params.kernel_type);
                 float p = pressure_value(density, get_pressure_params(params),
                                          params.pressure_type);
-                pressure[x / SCALE_FACTOR][y / SCALE_FACTOR] = p;
-                max_pressure = fmaxf(max_pressure, fabsf(p));
+                pressure[x / SCALE_FACTOR][y / SCALE_FACTOR] += p;
             }
+        }
+    }
+
+    float max_pressure = 0.0f;
+    for (int x = 0; x < SCREEN_WIDTH; x += SCALE_FACTOR) {
+        for (int y = 0; y < SCREEN_HEIGHT; y += SCALE_FACTOR) {
+            float p = pressure[x / SCALE_FACTOR][y / SCALE_FACTOR];
+            max_pressure = fmaxf(max_pressure, fabsf(p));
         }
     }
 
@@ -193,18 +199,18 @@ int main() {
     SetRandomSeed(time(NULL));
 
     struct simulation_parameters params = {
-        .particle_count = 100,
+        .particle_count = 20,
         .gravity = 0.0f,
         .width = FROM_SCREEN_TO_WORLD(SCREEN_WIDTH),
         .height = FROM_SCREEN_TO_WORLD(SCREEN_HEIGHT),
         .particle_radius = 0.05f,
-        .particle_mass = 0.1f,
+        .particle_mass = 1.0f,
         .damping = 0.5f,
-        .rest_density = 0.4f,
-        .pressure_multiplier = 10.0f,
+        .rest_density = 1.4f,
+        .pressure_multiplier = 100.0f,
         .pressure_type = GAS_PRESSURE,
         .kernel_type = GAUSSIAN_KERNEL,
-        .h = 1.0f,
+        .h = 2.0f,
     };
 
     struct particle ps[params.particle_count];

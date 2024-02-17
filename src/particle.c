@@ -18,6 +18,7 @@ void particles_init_rand(struct particle_array *particles, float width,
             (Vector2){GetRandomFloat(0, width), GetRandomFloat(0, height)};
         p->velocity = (Vector2){0.0f, 0.0f};
         p->density = 0.0f;
+        p->pressure = 0.0f;
     }
 }
 
@@ -51,6 +52,7 @@ void particles_init_grid(struct particle_array *particles, float width,
                 (Vector2){x_offset + j * spacing, y_offset + i * spacing};
             p->velocity = (Vector2){0.0f, 0.0f};
             p->density = 0.0f;
+            p->pressure = 0.0f;
         }
     }
 }
