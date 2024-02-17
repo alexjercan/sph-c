@@ -41,7 +41,6 @@ void DrawPressureTexture(struct particle_array *particles, float h,
 
     float pressure[SCREEN_WIDTH / SCALE_FACTOR][SCREEN_HEIGHT / SCALE_FACTOR] =
         {0};
-    float max_pressure = 0.0f;
     for (int i = 0; i < particles->count; i++) {
         for (int x = 0; x < SCREEN_WIDTH; x += SCALE_FACTOR) {
             for (int y = 0; y < SCREEN_HEIGHT; y += SCALE_FACTOR) {
@@ -50,9 +49,16 @@ void DrawPressureTexture(struct particle_array *particles, float h,
                               FROM_SCREEN_TO_WORLD(y + SCALE_FACTOR / 2.0f)};
                 float density = compute_density(particles, point, h);
                 float p = compute_pressure(density, rest_density);
-                pressure[x / SCALE_FACTOR][y / SCALE_FACTOR] = p;
-                max_pressure = fmaxf(max_pressure, fabsf(p));
+                pressure[x / SCALE_FACTOR][y / SCALE_FACTOR] += p;
             }
+        }
+    }
+
+    float max_pressure = 0.0f;
+    for (int x = 0; x < SCREEN_WIDTH; x += SCALE_FACTOR) {
+        for (int y = 0; y < SCREEN_HEIGHT; y += SCALE_FACTOR) {
+            float p = pressure[x / SCALE_FACTOR][y / SCALE_FACTOR];
+            max_pressure = fmaxf(max_pressure, fabsf(p));
         }
     }
 
