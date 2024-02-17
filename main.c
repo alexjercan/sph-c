@@ -167,10 +167,7 @@ void simulation_parameters_parse(char *filename,
     params->h = atof(value);
     free(value);
 
-    for (int i = 0; i < ini.count; i++) {
-        free(ini.items[i].items);
-    }
-    free(ini.items);
+    ini_free(&ini);
     free(buffer);
     fclose(file);
 }
@@ -376,6 +373,9 @@ int main() {
         } else if (IsKeyDown(KEY_LEFT_CONTROL)) {
             params.rest_density += GetMouseWheelMove() * 0.1f;
             params.rest_density = Clamp(params.rest_density, 0.1f, 3.5f);
+        } else if (IsKeyDown(KEY_RIGHT_SHIFT)) {
+            params.gravity += GetMouseWheelMove() * 0.5f;
+            params.gravity = Clamp(params.gravity, -10.0f, 10.0f);
         }
 
         BeginDrawing();
@@ -404,6 +404,8 @@ int main() {
         DrawText(TextFormat("h: %f (left shift)", params.h), 10, 10, 20, WHITE);
         DrawText(TextFormat("rho: %f (left ctrl)", params.rest_density), 10, 30,
                  20, WHITE);
+        DrawText(TextFormat("g: %f (right shift)", params.gravity), 10, 50, 20,
+                 WHITE);
 
         EndDrawing();
     }

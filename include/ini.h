@@ -34,11 +34,9 @@
 // INI File Structure
 struct ini_file;
 
-// Parse INI file from input string
 void ini_parse(struct ini_file *ini, char *input);
-
-// Get value from section and key
 char *ini_get_value(struct ini_file *ini, const char *section, const char *key);
+void ini_free(struct ini_file *ini);
 
 #endif // INI_H
 
@@ -218,6 +216,13 @@ struct section {
         unsigned int capacity;
 };
 
+void ini_section_free(struct section *s) {
+    if (s->items) free(s->items);
+    s->items = NULL;
+    s->count = 0;
+    s->capacity = 0;
+}
+
 struct ini_file {
         struct section root;
         struct section *items;
@@ -225,11 +230,31 @@ struct ini_file {
         unsigned int capacity;
 };
 
+void ini_free(struct ini_file *ini) {
+    ini_section_free(&ini->root);
+    if (ini->items) {
+        for (unsigned int i = 0; i < ini->count; i++) {
+            ini_section_free(&ini->items[i]);
+        }
+        free(ini->items);
+    }
+    ini->items = NULL;
+    ini->count = 0;
+    ini->capacity = 0;
+}
+
 struct token_array {
         struct token *items;
         unsigned int count;
         unsigned int capacity;
 };
+
+void token_array_free(struct token_array *tokens) {
+    if (tokens->items) free(tokens->items);
+    tokens->items = NULL;
+    tokens->count = 0;
+    tokens->capacity = 0;
+}
 
 struct parser {
         struct token_array *tokens;
@@ -329,6 +354,7 @@ void ini_file_parse(struct ini_file *ini, struct parser *p) {
     }
 }
 
+// Parse INI file from input string
 void ini_parse(struct ini_file *ini, char *input) {
     struct lexer l;
     lexer_init(&l, input);
@@ -345,9 +371,10 @@ void ini_parse(struct ini_file *ini, char *input) {
     parser_read_token(&p);
     ini_file_parse(ini, &p);
 
-    free(tokens.items);
+    token_array_free(&tokens);
 }
 
+// Get value from section and key
 char *ini_get_value(struct ini_file *ini, const char *section,
                     const char *key) {
     struct section *s = NULL;
