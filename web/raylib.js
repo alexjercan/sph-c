@@ -42,6 +42,7 @@ class RaylibJs {
         this.currentPressedKeyState = new Set();
         this.currentMouseWheelMoveState = 0;
         this.currentMousePosition = {x: 0, y: 0};
+        this.currentPressedMouseButtons = new Set();
         this.images = [];
         this.quit = false;
     }
@@ -82,10 +83,18 @@ class RaylibJs {
         const mouseMove = (e) => {
             this.currentMousePosition = {x: e.clientX, y: e.clientY};
         };
+        const mouseDown = (e) => {
+            this.currentPressedMouseButtons.add(e.button);
+        }
+        const mouseUp = (e) => {
+            this.currentPressedMouseButtons.delete(e.button);
+        }
         window.addEventListener("keydown", keyDown);
         window.addEventListener("keyup", keyUp);
         window.addEventListener("wheel", wheelMove);
         window.addEventListener("mousemove", mouseMove);
+        window.addEventListener("mousedown", mouseDown);
+        window.addEventListener("mouseup", mouseUp);
 
         this.wasm.instance.exports.main();
         const next = (timestamp) => {
@@ -194,7 +203,7 @@ class RaylibJs {
         return this.prevPressedKeyState.has(key) && !this.currentPressedKeyState.has(key);
     }
     IsMouseButtonDown(button) {
-        return false;
+        return this.currentPressedMouseButtons.has(button);
     }
     GetMouseWheelMove() {
       return this.currentMouseWheelMoveState;
@@ -385,11 +394,14 @@ class RaylibJs {
         const [x1, y1] = new Float32Array(buffer, v1_ptr, 2);
         const [x2, y2] = new Float32Array(buffer, v2_ptr, 2);
         new Float32Array(buffer, result_ptr, 2).set([x1 + x2, y1 + y2]);
-        console.log(result_ptr);
     }
 
     expf(x) {
         return Math.exp(x);
+    }
+
+    Clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
     }
 
     raylib_js_set_entry(entry) {
