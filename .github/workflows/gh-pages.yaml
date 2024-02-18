@@ -31,15 +31,6 @@ jobs:
         with:
           version: latest
           platform: x64
-      - name: Configure Project
-        uses: threeal/cmake-action@v1.3.0
-      - name: Build Project
-        run: |
-          mkdir -p build
-          cd build
-          cmake ..
-          cd ..
-          cmake --build ./build
       - name: Build Web
         run: |
           cd web
