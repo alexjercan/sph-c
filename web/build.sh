@@ -8,4 +8,5 @@ clang --target=wasm32 -I./include -I../src \
 
 cp index.html dist/
 cp raylib.js dist/
+rm -rf ../dist
 mv dist ../dist
