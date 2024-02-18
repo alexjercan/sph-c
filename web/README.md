@@ -10,6 +10,6 @@ First make sure you build the project and then you come here.
 
 ```console
 ./build.sh
-python -m http.server 6969
+python -m http.server -d ../dist 6969
 # open the browser at localhost:6969
 ```
