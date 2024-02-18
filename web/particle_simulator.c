@@ -195,11 +195,9 @@ void GameFrame(void)
     }
 
     // Draw parameters
-    DrawText(TextFormat("h: %f (left shift)", params.h), 10, 10, 20, WHITE);
-    DrawText(TextFormat("rho: %f (left ctrl)", params.rest_density), 10, 30,
-             20, WHITE);
-    DrawText(TextFormat("g: %f (right shift)", params.gravity), 10, 50, 20,
-             WHITE);
+    DrawText(TextFormat("Hold space to simulate"), 10, 10, 20, WHITE);
+    DrawText(TextFormat("Press R to reset"), 10, 30, 20, WHITE);
+    DrawText(TextFormat("Click to add particles"), 10, 50, 20, WHITE);
 
     EndDrawing();
 }
