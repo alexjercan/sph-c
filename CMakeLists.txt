@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
-project(sphlib C)
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_COMPILER "/usr/bin/clang")
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
@@ -14,14 +14,22 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(raylib)
 
-file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
+FetchContent_Declare(
+    ini_h
+    GIT_REPOSITORY "https://github.com/alexjercan/ini.h.git"
+    GIT_TAG "master"
+    GIT_PROGRESS TRUE
+)
 
-# Create a library from your project's source files
-add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_LIST_DIR}/src")
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+FetchContent_MakeAvailable(ini_h)
 
-# Examples
+project(sphlib C)
+
+file(GLOB_RECURSE SPH_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
+add_library(sphlib STATIC ${SPH_SOURCES})
+target_include_directories(sphlib PUBLIC "${CMAKE_CURRENT_LIST_DIR}/src")
+target_link_libraries(sphlib PRIVATE raylib)
+
 file(GLOB EXAMPLE_SOURCES "${CMAKE_CURRENT_LIST_DIR}/examples/*.c")
 foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
@@ -30,8 +38,9 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     target_link_libraries(${EXAMPLE_NAME} PRIVATE raylib)
 endforeach()
 
-# Main executable
+project(main C)
+
 add_executable(main "${CMAKE_CURRENT_LIST_DIR}/main.c")
-target_link_libraries(main PRIVATE ${PROJECT_NAME})
+target_include_directories(main PRIVATE ${CMAKE_BINARY_DIR}/_deps/ini_h-src)
+target_link_libraries(main PRIVATE sphlib)
 target_link_libraries(main PRIVATE raylib)
-target_include_directories(main PRIVATE "${CMAKE_CURRENT_LIST_DIR}/include")

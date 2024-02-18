@@ -1,5 +1,5 @@
 #define INI_IMPLEMENTATION
-#include "include/ini.h"
+#include "ini.h"
 #include "raylib.h"
 #include "raylib_extensions.h"
 #include "raymath.h"
