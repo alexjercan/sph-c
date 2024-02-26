@@ -349,7 +349,8 @@ int main() {
 
     unsigned int debug = 0;
 
-    struct particle *ps = calloc(params.particle_count, sizeof(struct particle));
+    struct particle *ps =
+        calloc(params.particle_count, sizeof(struct particle));
     struct particle_array particles = {
         .items = ps,
         .count = params.particle_count,
@@ -418,11 +419,16 @@ int main() {
             DrawCircleV(screen_position, screen_radius, GREEN);
         }
 
+        // Draw FPS
+        DrawText(
+            TextFormat("FPS: %d, particles: %d", GetFPS(), particles.count), 10,
+            10, 20, WHITE);
+
         // Draw parameters
-        DrawText(TextFormat("h: %f (left shift)", params.h), 10, 10, 20, WHITE);
-        DrawText(TextFormat("rho: %f (left ctrl)", params.rest_density), 10, 30,
+        DrawText(TextFormat("h: %f (left shift)", params.h), 10, 30, 20, WHITE);
+        DrawText(TextFormat("rho: %f (left ctrl)", params.rest_density), 10, 50,
                  20, WHITE);
-        DrawText(TextFormat("g: %f (right shift)", params.gravity), 10, 50, 20,
+        DrawText(TextFormat("g: %f (right shift)", params.gravity), 10, 70, 20,
                  WHITE);
 
         EndDrawing();
