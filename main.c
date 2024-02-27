@@ -1,3 +1,4 @@
+#include <pthread.h>
 #define INI_IMPLEMENTATION
 #include "ini.h"
 #include "raylib.h"
@@ -25,6 +26,9 @@
 #define SCALE_FACTOR 25
 
 struct simulation_parameters {
+        // Program
+        int threads;        // Number of threads
+
         // World
         int particle_count; // Number of particles
         float gravity;      // Gravity (in m/s^2)
@@ -79,6 +83,14 @@ void simulation_parameters_parse(char *filename,
     ini_parse(&ini, buffer);
 
     char *value = NULL;
+
+    value = ini_get_value(&ini, "program", "threads");
+    if (value != NULL) {
+        params->threads = atoi(value);
+        free(value);
+    } else {
+        params->threads = 1;
+    }
 
     value = ini_get_value(&ini, "world", "particle_count");
     ASSERT(value != NULL, "Could not find particle_count");
@@ -219,41 +231,86 @@ void resolve_collisions(struct particle *particle, Vector2 position,
     particle->position = position;
 }
 
-void simulation_step(struct particle_array *particles,
-                     struct simulation_parameters params) {
-    float dt = GetFrameTime();
+struct particle_thread_args {
+    struct particle_array *particles;
+    struct simulation_parameters *params;
+    pthread_barrier_t *barrier;
+    pthread_barrier_t *main_barrier;
+    int index;
+};
 
-    for (int i = 0; i < particles->count; i++) {
-        particles->items[i].density = particle_density(
-            particles, i, params.h, params.particle_mass, params.kernel_type);
-        particles->items[i].pressure =
-            pressure_value(particles->items[i].density,
-                           get_pressure_params(params), params.pressure_type);
+void *particle_simulation_step_thread(void *args) {
+    struct particle_thread_args *a = (struct particle_thread_args *)args;
+
+    int particles_per_thread = a->particles->count / a->params->threads;
+
+    int start = a->index * particles_per_thread;
+    int end = (a->index + 1) * particles_per_thread;
+    if (a->index == a->params->threads - 1) {
+        end = a->particles->count;
     }
 
-    for (int i = 0; i < particles->count; i++) {
+    for (int i = start; i < end; i++) {
+        a->particles->items[i].density = particle_density(
+            a->particles, i, a->params->h, a->params->particle_mass, a->params->kernel_type);
+        a->particles->items[i].pressure =
+            pressure_value(a->particles->items[i].density,
+                           get_pressure_params(*a->params), a->params->pressure_type);
+    }
+
+    pthread_barrier_wait(a->barrier);
+
+    for (int i = start; i < end; i++) {
         Vector2 pressure_gradient = particle_pressure_gradient(
-            particles, i, params.h, params.particle_mass, params.kernel_type);
+            a->particles, i, a->params->h, a->params->particle_mass, a->params->kernel_type);
 
         Vector2 pressure_acceleration =
-            Vector2Scale(pressure_gradient, 1.0f / particles->items[i].density);
+            Vector2Scale(pressure_gradient, 1.0f / a->particles->items[i].density);
 
-        Vector2 gravity_acceleration = {0.0f, params.gravity};
+        Vector2 gravity_acceleration = {0.0f, a->params->gravity};
 
         Vector2 acceleration =
             Vector2Add(pressure_acceleration, gravity_acceleration);
 
-        particles->items[i].velocity = Vector2Add(
-            particles->items[i].velocity, Vector2Scale(acceleration, dt));
+        a->particles->items[i].velocity = Vector2Add(
+            a->particles->items[i].velocity, Vector2Scale(acceleration, GetFrameTime()));
     }
 
-    for (int i = 0; i < particles->count; i++) {
+    pthread_barrier_wait(a->barrier);
+
+    for (int i = start; i < end; i++) {
         Vector2 position =
-            Vector2Add(particles->items[i].position,
-                       Vector2Scale(particles->items[i].velocity, dt));
+            Vector2Add(a->particles->items[i].position,
+                       Vector2Scale(a->particles->items[i].velocity, GetFrameTime()));
 
-        resolve_collisions(&particles->items[i], position, params);
+        resolve_collisions(&a->particles->items[i], position, *a->params);
     }
+
+    pthread_barrier_wait(a->barrier);
+
+    return NULL;
+}
+
+void *particle_simulation_thread(void *args) {
+    struct particle_thread_args *a = (struct particle_thread_args *)args;
+
+    while (!WindowShouldClose()) {
+        // Key presses on main
+
+        pthread_barrier_wait(a->main_barrier);
+
+        if (IsKeyDown(KEY_SPACE)) {
+            particle_simulation_step_thread(args);
+        }
+
+        pthread_barrier_wait(a->main_barrier);
+
+        // Draw particles
+
+        pthread_barrier_wait(a->main_barrier);
+    }
+
+    return NULL;
 }
 
 void DrawPressureTexture(struct particle_array *particles,
@@ -359,9 +416,26 @@ int main() {
 
     particles_init_rand(&particles, params.width, params.height);
 
+    pthread_t threads[params.threads];
+    struct particle_thread_args args[params.threads];
+    pthread_barrier_t barrier;
+    pthread_barrier_t main_barrier;
+
+    pthread_barrier_init(&barrier, NULL, params.threads);
+    pthread_barrier_init(&main_barrier, NULL, params.threads + 1);
+
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Smoothed Particle Hydrodynamics");
 
     SetTargetFPS(60);
+
+    for (int i = 0; i < params.threads; i++) {
+        args[i].particles = &particles;
+        args[i].params = &params;
+        args[i].barrier = &barrier;
+        args[i].main_barrier = &main_barrier;
+        args[i].index = i;
+        pthread_create(&threads[i], NULL, particle_simulation_thread, &args[i]);
+    }
 
     while (!WindowShouldClose()) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -395,13 +469,15 @@ int main() {
             params.gravity = Clamp(params.gravity, -10.0f, 10.0f);
         }
 
-        if (IsKeyDown(KEY_SPACE)) {
-            simulation_step(&particles, params);
-        }
-
         if (IsKeyPressed(KEY_F1)) {
             debug = !debug;
         }
+
+        pthread_barrier_wait(&main_barrier);
+
+        // Update particles
+
+        pthread_barrier_wait(&main_barrier);
 
         BeginDrawing();
         ClearBackground(DARKGRAY);
@@ -432,7 +508,16 @@ int main() {
                  WHITE);
 
         EndDrawing();
+
+        pthread_barrier_wait(&main_barrier);
     }
+
+    for (int i = 0; i < params.threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_barrier_destroy(&barrier);
+    pthread_barrier_destroy(&main_barrier);
 
     CloseWindow();
 
